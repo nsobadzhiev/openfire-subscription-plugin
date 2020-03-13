@@ -24,7 +24,10 @@ import org.jivesoftware.openfire.interceptor.InterceptorManager;
 import org.jivesoftware.openfire.interceptor.PacketInterceptor;
 import org.jivesoftware.openfire.interceptor.PacketRejectedException;
 import org.jivesoftware.openfire.session.Session;
+import org.jivesoftware.openfire.user.UserManager;
 import org.jivesoftware.util.JiveGlobals;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.Packet;
 import org.xmpp.packet.Presence;
@@ -59,11 +62,15 @@ public class SubscriptionPlugin implements Plugin {
     private SuscriptionPacketInterceptor interceptor = new SuscriptionPacketInterceptor();
 
     private PresenceRouter router;
+    private UserManager userManager;
     private String serverName;
+
+    private static final Logger log = LoggerFactory.getLogger(SubscriptionPlugin.class);
     
     public SubscriptionPlugin() {
         XMPPServer server = XMPPServer.getInstance();
         router = server.getPresenceRouter();
+        userManager = server.getUserManager();
         serverName = server.getServerInfo().getXMPPDomain();
 
         String list = JiveGlobals.getProperty(WHITE_LIST);
@@ -153,7 +160,7 @@ public class SubscriptionPlugin implements Plugin {
                 return;
             }
 
-            if ((packet instanceof Presence) && !incoming && !processed) {
+            if ((packet instanceof Presence) && incoming && !processed) {
                 Presence presencePacket = (Presence) packet;
 
                 Type presenceType = presencePacket.getType();
@@ -161,16 +168,26 @@ public class SubscriptionPlugin implements Plugin {
                     JID toJID = presencePacket.getTo();
                     JID fromJID = presencePacket.getFrom();
 
+                    log.debug("Handling subscription request {} -> {}", fromJID, toJID);
+
                     String toNode = toJID.getNode();
                     if (whiteList.contains(toNode)) {
                         return;
                     }
 
+                    // Check if the target user exists
+                    if (!userManager.isRegisteredUser(toJID)) {
+                        log.debug("Not a registered user, ignoring");
+                        return;
+                    }
+
                     if (type.equals(ACCEPT)) {
+                        log.debug("Accepting");
                         acceptSubscription(toJID, fromJID);
                     }
 
                     if (type.equals(REJECT)) {
+                        log.debug("Rejecting");
                         rejectSubscription(toJID, fromJID);
                     }
                 }
