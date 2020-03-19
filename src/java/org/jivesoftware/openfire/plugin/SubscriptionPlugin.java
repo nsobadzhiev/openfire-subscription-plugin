@@ -184,6 +184,7 @@ public class SubscriptionPlugin implements Plugin {
                     if (type.equals(ACCEPT)) {
                         log.debug("Accepting");
                         acceptSubscription(toJID, fromJID);
+                        acceptSubscription(fromJID, toJID);
                     }
 
                     if (type.equals(REJECT)) {
