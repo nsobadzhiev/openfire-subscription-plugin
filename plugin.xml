@@ -4,7 +4,7 @@
 
    <name>Subscription</name>
    <description>Automatically accepts or rejects subscription requests</description>
-   <author>Ryan Graham</author>
+   <author>Ryan Graham, Nikola Sobadjiev</author>
    <version>${project.version}</version>
    <date>tbc.</date>
    <url>http://www.igniterealtime.org</url>
