@@ -25,6 +25,7 @@ import org.jivesoftware.openfire.interceptor.PacketInterceptor;
 import org.jivesoftware.openfire.interceptor.PacketRejectedException;
 import org.jivesoftware.openfire.session.Session;
 import org.jivesoftware.openfire.user.UserManager;
+import org.jivesoftware.openfire.user.UserNotFoundException;
 import org.jivesoftware.util.JiveGlobals;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -177,7 +178,7 @@ public class SubscriptionPlugin implements Plugin {
 
                     // Check if the target user exists
                     if (!userManager.isRegisteredUser(toJID)) {
-                        log.debug("Not a registered user, ignoring");
+                        log.info("Not a registered user {}, ignoring", toJID);
                         return;
                     }
 
@@ -204,13 +205,23 @@ public class SubscriptionPlugin implements Plugin {
                 }
             }
 
-            // Simulate that the target user has accepted the presence subscription request
-            Presence presence = new Presence();
-            presence.setType(Presence.Type.subscribed);
+            // Only accept the subscription if the target user has the originating user in its roster
+            // Otherwise an exception will be thrown
+            boolean isInRoster = false;
+            try {
+                isInRoster = XMPPServer.getInstance().getUserManager().getUser(toJID.toBareJID()).getRoster().isRosterItem(fromJID);
+            } catch (UserNotFoundException e) {
+                log.error("Cannot accept subscription", e);
+            }
+            if (isInRoster) {
+                // Simulate that the target user has accepted the presence subscription request
+                Presence presence = new Presence();
+                presence.setType(Presence.Type.subscribed);
 
-            presence.setTo(fromJID);
-            presence.setFrom(toJID);
-            router.route(presence);
+                presence.setTo(fromJID);
+                presence.setFrom(toJID);
+                router.route(presence);
+            }
 
             throw new PacketRejectedException();
         }
