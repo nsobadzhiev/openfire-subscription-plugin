@@ -187,11 +187,8 @@ public class SubscriptionPlugin implements Plugin {
                         // Try to automatically give the remote party subscription
                         // to the requesting user. If it's not possible, ignore the error
                         acceptSubscription(fromJID, toJID);
-                        if (acceptSubscription(toJID, fromJID)) {
-                            // If the subscription is automatically accepted,
-                            // reject the packet so it's not handled by the server again
-                            throw new PacketRejectedException();
-                        }
+                        acceptSubscription(toJID, fromJID);
+                        throw new PacketRejectedException();
                     }
 
                     if (type.equals(REJECT)) {
