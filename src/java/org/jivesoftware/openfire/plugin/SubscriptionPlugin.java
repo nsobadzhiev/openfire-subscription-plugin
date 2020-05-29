@@ -184,7 +184,11 @@ public class SubscriptionPlugin implements Plugin {
 
                     if (type.equals(ACCEPT)) {
                         log.debug("Accepting");
+                        // Try to automatically give the remote party subscription
+                        // to the requesting user. If it's not possible, ignore the error
+                        acceptSubscription(fromJID, toJID);
                         acceptSubscription(toJID, fromJID);
+                        throw new PacketRejectedException();
                     }
 
                     if (type.equals(REJECT)) {
@@ -195,13 +199,13 @@ public class SubscriptionPlugin implements Plugin {
             }
         }
 
-        private void acceptSubscription(JID toJID, JID fromJID) throws PacketRejectedException {
+        private boolean acceptSubscription(JID toJID, JID fromJID) {
             if (getSubscriptionLevel().equals(LOCAL)) {
                 String toDomain = toJID.getDomain();
                 String fromDomain = fromJID.getDomain();
 
                 if (!toDomain.equals(serverName) || !fromDomain.equals(serverName)) {
-                    return;
+                    return false;
                 }
             }
 
@@ -215,6 +219,7 @@ public class SubscriptionPlugin implements Plugin {
             }
             if (isInRoster) {
                 // Simulate that the target user has accepted the presence subscription request
+                log.debug("{} is already in {}'s roster. Subscribing...", fromJID, toJID);
                 Presence presence = new Presence();
                 presence.setType(Presence.Type.subscribed);
 
@@ -222,8 +227,7 @@ public class SubscriptionPlugin implements Plugin {
                 presence.setFrom(toJID);
                 router.route(presence);
             }
-
-            throw new PacketRejectedException();
+            return isInRoster;
         }
 
         private void rejectSubscription(JID toJID, JID fromJID) throws PacketRejectedException {
